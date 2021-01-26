@@ -15,16 +15,12 @@ $(GODOC): ; @go get golang.org/x/tools/cmd/godoc
 
 .DEFAULT_GOAL := build
 
-.PHONY: deps
-deps:
-	go get -d -v .
-
 .PHONY: build $(SRCS)
-build: deps
+build: 
 	CGO_ENABLED=0 GOOS=linux go build  -a -tags netgo -installsuffix netgo -ldflags $(LDFLAGS) -o bin/$(NAME)
 
 .PHONY: install
-install: deps
+install:
 	go install -ldflags $(LDFLAGS)
 
 .PHONY: lint
