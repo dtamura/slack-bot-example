@@ -1,6 +1,8 @@
 package main
 
 import (
+	"io"
+	"io/ioutil"
 	"log"
 	"os"
 
@@ -10,12 +12,28 @@ import (
 )
 
 func slash(c *gin.Context) {
-	span, _ := opentracing.StartSpanFromContext(c.Request.Context(), "healthz")
-	defer span.Finish()
+	span, _ := opentracing.StartSpanFromContext(c.Request.Context(), "slash")
 
+	defer span.Finish()
+	verifier, err := slack.NewSecretsVerifier(c.Request.Header, os.Getenv("SLACK_SIGNING_SECRET"))
+	if err != nil {
+		c.Error(err)
+		c.AbortWithStatusJSON(401, gin.H{"status": false, "message": err.Error()})
+		return
+	}
+
+	c.Request.Body = ioutil.NopCloser(io.TeeReader(c.Request.Body, &verifier))
 	sc, err := slack.SlashCommandParse(c.Request)
 	if err != nil {
-		panic(err)
+		c.Error(err)
+		c.AbortWithStatusJSON(401, gin.H{"status": false, "message": err.Error()})
+		return
+	}
+
+	if err = verifier.Ensure(); err != nil {
+		c.Error(err)
+		c.AbortWithStatusJSON(401, gin.H{"status": false, "message": err.Error()})
+		return
 	}
 
 	obj := slack.NewTextBlockObject(slack.MarkdownType, "<@"+sc.UserName+"> Hello World!!", false, false)
@@ -37,7 +55,8 @@ func slash(c *gin.Context) {
 	// 成功時
 	_, err = slackAPI.OpenView(sc.TriggerID, modal)
 	if err != nil {
-		log.Fatalln(err)
+		c.Error(err)
+		c.AbortWithStatusJSON(500, gin.H{"status": false, "message": err.Error()})
 	}
 	return
 	// c.String(200, "<@"+sc.UserName+"> Hello World!!")
