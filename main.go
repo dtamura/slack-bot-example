@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
 	"github.com/slack-go/slack"
@@ -18,6 +19,7 @@ import (
 var slackAPI *slack.Client
 
 func main() {
+	log.SetFormatter(&log.JSONFormatter{})
 	router := gin.New()
 
 	// LoggerWithFormatter middleware will write the logs to gin.DefaultWriter
