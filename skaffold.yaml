@@ -1,0 +1,19 @@
+apiVersion: skaffold/v2beta11
+kind: Config
+metadata:
+  name: slack-test
+build:
+  artifacts:
+  - image: asia.gcr.io/dtamura/slack/test
+    docker:
+      dockerfile: Dockerfile
+deploy:
+  kustomize:
+    paths:
+    - k8s
+profiles:
+- name: dev
+  deploy:
+    kustomize:
+      paths:
+      - k8s
