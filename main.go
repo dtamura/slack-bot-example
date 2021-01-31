@@ -44,6 +44,7 @@ func main() {
 	initApp()
 	router.GET("/healthz", healthz)
 	router.POST("/slash", slash)
+	router.POST("/interactive", interactive)
 	router.GET("/", index)
 
 	server := &http.Server{

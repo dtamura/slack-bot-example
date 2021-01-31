@@ -1,8 +1,6 @@
 package main
 
 import (
-	"io"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -13,24 +11,16 @@ import (
 
 func slash(c *gin.Context) {
 	span, _ := opentracing.StartSpanFromContext(c.Request.Context(), "slash")
-
 	defer span.Finish()
-	verifier, err := slack.NewSecretsVerifier(c.Request.Header, os.Getenv("SLACK_SIGNING_SECRET"))
-	if err != nil {
+
+	if err := verifySigningSecret(c.Request); err != nil {
 		c.Error(err)
-		c.AbortWithStatusJSON(401, gin.H{"status": false, "message": err.Error()})
+		c.AbortWithStatusJSON(401, gin.H{"status": false})
 		return
 	}
 
-	c.Request.Body = ioutil.NopCloser(io.TeeReader(c.Request.Body, &verifier))
 	sc, err := slack.SlashCommandParse(c.Request)
 	if err != nil {
-		c.Error(err)
-		c.AbortWithStatusJSON(401, gin.H{"status": false, "message": err.Error()})
-		return
-	}
-
-	if err = verifier.Ensure(); err != nil {
 		c.Error(err)
 		c.AbortWithStatusJSON(401, gin.H{"status": false, "message": err.Error()})
 		return
@@ -49,7 +39,6 @@ func slash(c *gin.Context) {
 	log.Println(modal)
 
 	hostname, _ := os.Hostname()
-
 	span.SetTag("hostname", hostname)
 
 	// 成功時
